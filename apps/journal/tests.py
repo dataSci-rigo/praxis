@@ -14,7 +14,9 @@ class MindsetLanguageHeuristicTests(TestCase):
 
     def test_growth_language_scores_growth(self):
         # matches "yet", "next time", "try a different", "strategy"
-        fixed, growth = score_text("I haven't mastered it yet — next time I'll try a different strategy.")
+        fixed, growth = score_text(
+            "I haven't mastered it yet — next time I'll try a different strategy."
+        )
         self.assertEqual(fixed, 0)
         self.assertEqual(growth, 4)
 

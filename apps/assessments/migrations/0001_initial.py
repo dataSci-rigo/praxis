@@ -5,7 +5,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     initial = True
 
     dependencies = []
@@ -38,7 +37,9 @@ class Migration(migrations.Migration):
                 ("subscale_json", models.JSONField(blank=True, default=dict)),
                 ("created_at", models.DateTimeField(auto_now_add=True)),
             ],
-            options={"ordering": ["-taken_at"],},
+            options={
+                "ordering": ["-taken_at"],
+            },
         ),
         migrations.CreateModel(
             name="ItemResponse",
@@ -63,7 +64,9 @@ class Migration(migrations.Migration):
                     ),
                 ),
             ],
-            options={"ordering": ["item_number"],},
+            options={
+                "ordering": ["item_number"],
+            },
         ),
         migrations.CreateModel(
             name="ScaleItem",

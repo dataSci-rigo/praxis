@@ -4,7 +4,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     initial = True
 
     dependencies = []
@@ -38,6 +37,8 @@ class Migration(migrations.Migration):
                 ("times_shown", models.PositiveIntegerField(default=0)),
                 ("created_at", models.DateTimeField(auto_now_add=True)),
             ],
-            options={"ordering": ["book", "title"],},
+            options={
+                "ordering": ["book", "title"],
+            },
         ),
     ]

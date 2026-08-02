@@ -5,7 +5,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     initial = True
 
     dependencies = []
@@ -41,7 +40,9 @@ class Migration(migrations.Migration):
                 ("created_at", models.DateTimeField(auto_now_add=True)),
                 ("updated_at", models.DateTimeField(auto_now=True)),
             ],
-            options={"ordering": ["-scheduled_for"],},
+            options={
+                "ordering": ["-scheduled_for"],
+            },
         ),
         migrations.CreateModel(
             name="PingResponse",
