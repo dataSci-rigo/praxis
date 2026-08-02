@@ -34,6 +34,7 @@ class Session(models.Model):
     had_immediate_feedback = models.BooleanField(null=True, blank=True)
 
     notes = models.TextField(blank=True, default="")
+    is_demo = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

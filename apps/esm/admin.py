@@ -5,8 +5,8 @@ from apps.esm.models import Ping, PingResponse
 
 @admin.register(Ping)
 class PingAdmin(admin.ModelAdmin):
-    list_display = ["scheduled_for", "sent_at", "status"]
-    list_filter = ["status"]
+    list_display = ["scheduled_for", "sent_at", "status", "is_demo"]
+    list_filter = ["status", "is_demo"]
 
 
 @admin.register(PingResponse)

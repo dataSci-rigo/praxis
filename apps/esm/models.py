@@ -16,6 +16,7 @@ class Ping(models.Model):
     scheduled_for = models.DateTimeField()
     sent_at = models.DateTimeField(null=True, blank=True)
     status = models.CharField(max_length=8, choices=STATUS_CHOICES, default=PENDING)
+    is_demo = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

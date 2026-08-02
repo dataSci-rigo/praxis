@@ -28,6 +28,7 @@ class Assessment(models.Model):
     taken_at = models.DateTimeField()
     total_score = models.FloatField()
     subscale_json = models.JSONField(default=dict, blank=True)
+    is_demo = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

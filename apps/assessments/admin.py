@@ -16,6 +16,6 @@ class ItemResponseInline(admin.TabularInline):
 
 @admin.register(Assessment)
 class AssessmentAdmin(admin.ModelAdmin):
-    list_display = ["kind", "taken_at", "total_score"]
-    list_filter = ["kind"]
+    list_display = ["kind", "taken_at", "total_score", "is_demo"]
+    list_filter = ["kind", "is_demo"]
     inlines = [ItemResponseInline]
