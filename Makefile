@@ -1,4 +1,4 @@
-.PHONY: setup web bot test lint seed unseed backup
+.PHONY: setup web bot test lint seed unseed backup freeze
 
 setup:
 	uv sync
@@ -28,3 +28,6 @@ unseed:
 backup:
 	mkdir -p backups
 	cp db.sqlite3 backups/db-$$(date +%Y%m%d-%H%M%S).sqlite3
+
+freeze:
+	uv export --no-dev --no-hashes -o requirements.txt

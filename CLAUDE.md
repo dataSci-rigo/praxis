@@ -28,11 +28,12 @@ make backup     # copy db.sqlite3 to backups/ with date suffix
 
 ## Deployment
 
-VM services `app-praxis-web` and `app-praxis-bot` (systemd), same pattern as `app-todo` /
-`app-adhd` / `app-food`. From `~/Documents`: `python env_sync.py git_pull praxis`,
-`install_reqs praxis`, `push_env praxis`; restart from the `panel` control site. Not yet
-wired into `env_sync.py`'s project list / a systemd unit — that's a follow-up task, not
-done as part of the Django/bot build itself.
+`praxis` is in `env_sync.py`'s `_VM_PROJECTS` and `panel`'s `SERVICES` list. VM services
+`app-praxis-web` (gunicorn, port 8007) and `app-praxis-bot` (systemd), same pattern as
+`app-todo` / `app-adhd` / `app-food` — see `server/vm_setup.sh` for the `create_service`
+calls and nginx block (commented out until the dashboard has real content). From
+`~/Documents`: `python env_sync.py git_pull praxis`, `install_reqs praxis`,
+`push_env praxis`; restart from the `panel` control site.
 
 ## Layout
 
@@ -64,3 +65,4 @@ Work through `docs/BUILD_TASKS.md` phase by phase. For each task: read the relev
 - APScheduler lives inside the `runbot` process only. Web process never schedules jobs.
 - ESM pings missed while the bot process is down (VM reboot, deploy restart) are marked EXPIRED, never back-filled.
 - The `sessions_log` app is deliberately not named `sessions` (clashes with `django.contrib.sessions`).
+- `requirements.txt` is generated (`make freeze`) from `pyproject.toml`/`uv.lock` — it exists only because the VM's `env_sync.py install_reqs` uses plain venv+pip, not uv. Regenerate it whenever dependencies change, and commit both.

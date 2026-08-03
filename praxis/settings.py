@@ -13,7 +13,10 @@ environ.Env.read_env(BASE_DIR / ".env", overwrite=True)
 
 SECRET_KEY = env("DJANGO_SECRET_KEY", default="dev-only-insecure-key")
 DEBUG = env.bool("DJANGO_DEBUG", default=True)
-ALLOWED_HOSTS = ["localhost", "127.0.0.1"]
+# "*" is fine here: the VM only accepts inbound traffic over Tailscale (see
+# server/vm_setup.sh's nginx block + firewall), so there's no public Host-header
+# spoofing surface. Override with a comma-separated DJANGO_ALLOWED_HOSTS if that changes.
+ALLOWED_HOSTS = env.list("DJANGO_ALLOWED_HOSTS", default=["*"])
 
 TELEGRAM_BOT_TOKEN = env("TELEGRAM_BOT_TOKEN", default="")
 TELEGRAM_OWNER_ID = int(env("TELEGRAM_OWNER_ID", default="0") or 0)
