@@ -1,3 +1,4 @@
+from django.utils import timezone
 from telegram import Update
 from telegram.ext import (
     CallbackQueryHandler,
@@ -15,7 +16,6 @@ from apps.bot.handlers.common import cancel
 from apps.bot.keyboards import CANCEL_CALLBACK, goal_choices, goal_keyboard
 from apps.bot.services import create_learning_session
 from apps.goals.models import Goal
-from django.utils import timezone
 
 GOAL, DURATION, NOTES = range(3)
 
@@ -27,7 +27,9 @@ async def learn_entry(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int
     if not goals:
         await update.message.reply_text("No goals yet — add one with /goal first.")
         return ConversationHandler.END
-    await update.message.reply_text("Learning session — pick a goal:", reply_markup=goal_keyboard(goals))
+    await update.message.reply_text(
+        "Learning session — pick a goal:", reply_markup=goal_keyboard(goals)
+    )
     return GOAL
 
 

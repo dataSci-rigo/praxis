@@ -1,3 +1,4 @@
+from django.utils import timezone
 from telegram import Update
 from telegram.ext import (
     CallbackQueryHandler,
@@ -15,7 +16,6 @@ from apps.bot.handlers.common import cancel
 from apps.bot.keyboards import CANCEL_CALLBACK, goal_choices, goal_keyboard, rating_keyboard
 from apps.bot.services import create_dp_session
 from apps.goals.models import Goal
-from django.utils import timezone
 
 GOAL, STRETCH, DURATION, FEEDBACK, REFINEMENT, DISCOMFORT = range(6)
 
@@ -41,7 +41,9 @@ async def dp_goal_chosen(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         await query.edit_message_text("Cancelled.")
         return ConversationHandler.END
     context.user_data["dp_goal_id"] = int(query.data.split(":")[1])
-    await query.edit_message_text("What's the stretch goal — the ONE weakness this session targets?")
+    await query.edit_message_text(
+        "What's the stretch goal — the ONE weakness this session targets?"
+    )
     return STRETCH
 
 
@@ -108,7 +110,9 @@ async def dp_discomfort(update: Update, context: ContextTypes.DEFAULT_TYPE) -> i
         refinement=data["dp_refinement"],
         discomfort=discomfort,
     )
-    text = await db(confirmation_text, f"✅ Deliberate practice logged ({data['dp_duration_min']} min).")
+    text = await db(
+        confirmation_text, f"✅ Deliberate practice logged ({data['dp_duration_min']} min)."
+    )
     await query.edit_message_text(text)
     context.user_data.clear()
     return ConversationHandler.END

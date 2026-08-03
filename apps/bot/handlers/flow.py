@@ -1,3 +1,4 @@
+from django.utils import timezone
 from telegram import Update
 from telegram.ext import (
     CallbackQueryHandler,
@@ -21,7 +22,6 @@ from apps.bot.keyboards import (
 )
 from apps.bot.services import create_flow_session
 from apps.goals.models import Goal
-from django.utils import timezone
 
 GOAL, DURATION, CHALLENGE, SKILL, ABSORPTION, ENJOYMENT, CLEAR_GOAL, IMMEDIATE_FEEDBACK = range(8)
 

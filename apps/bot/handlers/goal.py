@@ -1,5 +1,12 @@
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
-from telegram.ext import CallbackQueryHandler, CommandHandler, ContextTypes, ConversationHandler, MessageHandler, filters
+from telegram.ext import (
+    CallbackQueryHandler,
+    CommandHandler,
+    ContextTypes,
+    ConversationHandler,
+    MessageHandler,
+    filters,
+)
 
 from apps.bot.asyncdb import db
 from apps.bot.decorators import owner_only
@@ -40,7 +47,9 @@ async def goal_menu(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     if not mids:
         await query.edit_message_text("No MID-level goals yet — add one via the website first.")
         return ConversationHandler.END
-    await query.edit_message_text("Add a LOW goal under which MID goal?", reply_markup=goal_keyboard(mids))
+    await query.edit_message_text(
+        "Add a LOW goal under which MID goal?", reply_markup=goal_keyboard(mids)
+    )
     return PICK_MID
 
 

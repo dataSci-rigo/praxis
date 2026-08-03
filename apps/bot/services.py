@@ -127,8 +127,6 @@ def this_week_stats() -> dict:
         hour=0, minute=0, second=0, microsecond=0
     )
     week_sessions = Session.objects.filter(started_at__gte=week_start)
-    dp_minutes = sum(
-        s.duration_min for s in week_sessions.filter(kind=Session.DELIBERATE_PRACTICE)
-    )
+    dp_minutes = sum(s.duration_min for s in week_sessions.filter(kind=Session.DELIBERATE_PRACTICE))
     flow_episodes = week_sessions.filter(kind=Session.FLOW_PERFORMANCE).count()
     return {"dp_minutes": dp_minutes, "flow_episodes": flow_episodes}

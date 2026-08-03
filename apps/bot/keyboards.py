@@ -21,7 +21,9 @@ def goal_keyboard(goals: list[Goal]) -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(rows)
 
 
-def rating_keyboard(prefix: str, low: int = 1, high: int = 10, per_row: int = 5) -> InlineKeyboardMarkup:
+def rating_keyboard(
+    prefix: str, low: int = 1, high: int = 10, per_row: int = 5
+) -> InlineKeyboardMarkup:
     numbers = list(range(low, high + 1))
     rows = [
         [
