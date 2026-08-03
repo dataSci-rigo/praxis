@@ -35,8 +35,9 @@ make web    # Django site at localhost:8000 (admin at /admin/ — create a super
 make bot    # long-polling bot process (needs TELEGRAM_BOT_TOKEN + TELEGRAM_OWNER_ID)
 ```
 
-Run both at once in two terminals, or under any simple process supervisor — there's no
-Docker/webhook setup here, this is meant to run on your own machine.
+Runs the same way locally (for development) or on the VM as `app-praxis-web` /
+`app-praxis-bot` systemd services — no Docker, no webhook, just two long-running
+processes. Locally, run both at once in two terminals or under any simple supervisor.
 
 ```bash
 uv run python manage.py createsuperuser

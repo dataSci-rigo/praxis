@@ -1,6 +1,6 @@
 # CLAUDE.md — Praxis
 
-Personal single-user system implementing practices from *Mindset* (Dweck), *Flow* (Csikszentmihalyi), and *Grit* (Duckworth). Telegram bot for capture, Django website for review and analytics. Local machine only.
+Personal single-user system implementing practices from *Mindset* (Dweck), *Flow* (Csikszentmihalyi), and *Grit* (Duckworth). Telegram bot for capture, Django website for review and analytics. VM-first: deployed on the GCP VM alongside the rest of `~/apps` (see `env_sync.py`, `panel`), not run locally in production. Local `make web`/`make bot` is for development only.
 
 Authoritative documents: `docs/PROJECT_PLAN.md` (why, phases) and `docs/SPECIFICATION.md` (what, exactly). **When this file, the spec, and your instincts disagree: the spec wins.** If the spec is ambiguous, ask before implementing.
 
@@ -25,6 +25,14 @@ make seed       # load demo fixtures (flagged as demo)
 make unseed     # remove demo data
 make backup     # copy db.sqlite3 to backups/ with date suffix
 ```
+
+## Deployment
+
+VM services `app-praxis-web` and `app-praxis-bot` (systemd), same pattern as `app-todo` /
+`app-adhd` / `app-food`. From `~/Documents`: `python env_sync.py git_pull praxis`,
+`install_reqs praxis`, `push_env praxis`; restart from the `panel` control site. Not yet
+wired into `env_sync.py`'s project list / a systemd unit — that's a follow-up task, not
+done as part of the Django/bot build itself.
 
 ## Layout
 
@@ -54,5 +62,5 @@ Work through `docs/BUILD_TASKS.md` phase by phase. For each task: read the relev
 - SQLite + two processes: enable WAL mode in a connection signal; keep transactions short in bot handlers.
 - python-telegram-bot v21 is asyncio-based; Django ORM calls from handlers must use `sync_to_async` (or `asgiref`) — wrap them consistently in a small helper.
 - APScheduler lives inside the `runbot` process only. Web process never schedules jobs.
-- ESM pings missed while the machine is off are marked EXPIRED, never back-filled.
+- ESM pings missed while the bot process is down (VM reboot, deploy restart) are marked EXPIRED, never back-filled.
 - The `sessions_log` app is deliberately not named `sessions` (clashes with `django.contrib.sessions`).

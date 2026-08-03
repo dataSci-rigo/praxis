@@ -1,6 +1,6 @@
 # Praxis — Project Plan
 
-A personal system for practicing the core ideas of *Mindset* (Carol Dweck), *Flow* (Mihaly Csikszentmihalyi), and *Grit* (Angela Duckworth). Capture happens primarily through a Telegram bot; review, editing, and analytics happen on a local Django website. Single user, runs on your own machine.
+A personal system for practicing the core ideas of *Mindset* (Carol Dweck), *Flow* (Mihaly Csikszentmihalyi), and *Grit* (Angela Duckworth). Capture happens primarily through a Telegram bot; review, editing, and analytics happen on a Django website. Single user, deployed on the VM alongside the rest of `~/apps`.
 
 **Working name:** Praxis (rename freely).
 
@@ -78,4 +78,4 @@ Each phase is independently useful; stop anywhere and you still have a working t
 
 ## 7. Out of scope (v1)
 
-Multi-user support, mobile app, cloud deployment, social features, LLM-based journaling analysis (a heuristic wordlist ships first; an optional Claude API pass is a stretch goal), calendar integration.
+Multi-user support, mobile app, social features, LLM-based journaling analysis (a heuristic wordlist ships first; an optional Claude API pass is a stretch goal), calendar integration.

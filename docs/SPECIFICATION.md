@@ -2,13 +2,15 @@
 
 ## 1. Architecture
 
-Single-user, local-first. Two processes sharing one SQLite database via Django ORM:
+Single-user, VM-first — deployed on the same GCP VM as the rest of `~/apps` (`todo_list`,
+`adhd-bot`, `food`, ...), not run locally. Two processes sharing one SQLite database via
+Django ORM:
 
 ```
 ┌─────────────────────┐        ┌──────────────────────────┐
 │  Django web server   │        │  Bot process              │
 │  manage.py runserver │        │  manage.py runbot         │
-│  localhost:8000      │        │  python-telegram-bot      │
+│  VM, Tailscale-only  │        │  python-telegram-bot      │
 │  dashboard/review    │        │  LONG POLLING (no webhook)│
 └──────────┬──────────┘        └────────────┬─────────────┘
            │                                 │
@@ -17,10 +19,11 @@ Single-user, local-first. Two processes sharing one SQLite database via Django O
 ```
 
 - **Stack:** Python 3.12, Django 5.x, python-telegram-bot ≥ 21 (async), Chart.js via CDN for charts, Django templates (no SPA), APScheduler (inside bot process) for ESM pings.
-- **Why long polling:** the app runs on a personal machine with no public URL. Polling requires zero network setup.
+- **Deployment:** two systemd services on the VM (`app-praxis-web`, `app-praxis-bot`), mirroring `app-todo`/`app-adhd`/`app-food`. Deployed via `env_sync.py git_pull`/`install_reqs`/`push_env`, restarted from the `panel` control site — same as every other `~/apps` project. Local development against the same repo still works (`make web` / `make bot`) for iterating before a push.
+- **Why long polling:** no public webhook endpoint to expose or secure — the VM's firewall stays closed to inbound Telegram traffic either way. Polling requires zero network setup on the VM.
 - **SQLite in WAL mode** (`PRAGMA journal_mode=WAL`) so web and bot processes can read/write concurrently. Both processes are Django management commands so they share settings and ORM.
-- **Auth:** Django admin login for the website (localhost only). The bot ignores every Telegram user ID except `TELEGRAM_OWNER_ID` from `.env`.
-- **Config via `.env`:** `TELEGRAM_BOT_TOKEN`, `TELEGRAM_OWNER_ID`, `TIME_ZONE` (default `America/Los_Angeles`), `ESM_PINGS_PER_DAY` (default 3), `ESM_WINDOW` (default `09:00-21:00`).
+- **Auth:** Django admin login for the website (Tailscale-only, like `panel` — never exposed publicly). The bot ignores every Telegram user ID except `TELEGRAM_OWNER_ID` from `.env`.
+- **Config via `.env`:** `TELEGRAM_BOT_TOKEN`, `TELEGRAM_OWNER_ID`, `TIME_ZONE` (default `America/Los_Angeles`), `ESM_PINGS_PER_DAY` (default 3), `ESM_WINDOW` (default `09:00-21:00`). Synced to the VM via `env_sync.py push_env praxis`, same as every other project.
 
 ## 2. Django apps
 
