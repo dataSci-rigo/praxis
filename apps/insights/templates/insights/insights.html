@@ -1,0 +1,233 @@
+{% extends "base.html" %}
+{% load insights_extras %}
+{% block title %}Insights — Praxis{% endblock %}
+
+{% block content %}
+<h1>Insights</h1>
+
+<section class="panel">
+  <h2>Flow map <small>(trailing 60 days, personal baseline)</small></h2>
+  {% if flow_map.points %}
+    <p>Baseline — challenge: {{ flow_map.baseline_challenge|floatformat:1 }}, skill: {{ flow_map.baseline_skill|floatformat:1 }}</p>
+    <canvas id="flow-map" height="300"></canvas>
+    {{ flow_map.points|json_script:"flow-map-data" }}
+    <script>
+      (function () {
+        const points = JSON.parse(document.getElementById("flow-map-data").textContent);
+        const colors = {flow: "#2a9d8f", anxiety: "#e76f51", boredom: "#e9c46a", apathy: "#8d99ae"};
+        new Chart(document.getElementById("flow-map"), {
+          type: "scatter",
+          data: {
+            datasets: [{
+              data: points.map(p => ({x: p.challenge, y: p.skill, activity: p.activity, quadrant: p.quadrant})),
+              backgroundColor: points.map(p => colors[p.quadrant]),
+            }],
+          },
+          options: {
+            scales: {
+              x: {title: {display: true, text: "Challenge"}, min: 0, max: 10},
+              y: {title: {display: true, text: "Skill"}, min: 0, max: 10},
+            },
+            plugins: {
+              legend: {display: false},
+              tooltip: {
+                callbacks: {
+                  label: (ctx) => `${ctx.raw.activity} (${ctx.raw.quadrant})`,
+                },
+              },
+            },
+          },
+        });
+      })();
+    </script>
+
+    <h3>Activities by % of time in Flow</h3>
+    {% if activity_ranking %}
+      <table class="compact">
+        <thead><tr><th>Activity</th><th>Points</th><th>% in Flow</th></tr></thead>
+        <tbody>
+          {% for row in activity_ranking %}
+          <tr>
+            <td>{{ row.activity }}</td>
+            <td>{{ row.n }}</td>
+            <td>{{ row.flow_pct|floatformat:0 }}%</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <p class="empty-state">Need at least 3 points on the same activity to rank it.</p>
+    {% endif %}
+  {% else %}
+    <p class="empty-state">Need a few more days of ESM pings or flow sessions before a flow map appears.</p>
+  {% endif %}
+</section>
+
+<section class="panel">
+  <h2>Deliberate practice → Flow <small>(flagship analytic)</small></h2>
+  {% if weekly_series %}
+    <canvas id="dp-flow-chart" height="280"></canvas>
+    {{ weekly_series|json_script:"dp-flow-data" }}
+    <script>
+      (function () {
+        const series = JSON.parse(document.getElementById("dp-flow-data").textContent);
+        new Chart(document.getElementById("dp-flow-chart"), {
+          type: "line",
+          data: {
+            labels: series.map(w => w.week_start),
+            datasets: [
+              {
+                label: "DP minutes",
+                data: series.map(w => w.dp_minutes),
+                borderColor: "#264653",
+                yAxisID: "y",
+              },
+              {
+                label: "Flow rate",
+                data: series.map(w => w.flow_rate),
+                borderColor: "#2a9d8f",
+                yAxisID: "y1",
+              },
+            ],
+          },
+          options: {
+            scales: {
+              y: {type: "linear", position: "left", title: {display: true, text: "DP minutes"}},
+              y1: {
+                type: "linear", position: "right", min: 0, max: 1,
+                title: {display: true, text: "Flow rate"},
+                grid: {drawOnChartArea: false},
+              },
+            },
+          },
+        });
+      })();
+    </script>
+    {% if correlation is not None %}
+      <p><strong>r = {{ correlation|floatformat:2 }}</strong> between this week's DP minutes and next week's flow rate —
+      correlation, not causation; n is tiny; treat as a mirror, not a verdict.</p>
+    {% else %}
+      <p class="empty-state">Need at least 8 weeks of paired data before a correlation is shown.</p>
+    {% endif %}
+  {% else %}
+    <p class="empty-state">No sessions logged yet.</p>
+  {% endif %}
+</section>
+
+<section class="panel">
+  <h2>Consistency <small>(grit)</small></h2>
+  <p>
+    Current streak: <strong>{{ streaks.current_streak }} day{{ streaks.current_streak|pluralize }}</strong>
+    &nbsp;·&nbsp; Longest streak: <strong>{{ streaks.longest_streak }} day{{ streaks.longest_streak|pluralize }}</strong>
+    &nbsp;·&nbsp; Active days (trailing 4 weeks): <strong>{{ active_day_percentage|floatformat:0 }}%</strong>
+  </p>
+
+  <h3>Weekly minutes by goal</h3>
+  {% if heatmap.goals %}
+    <div style="overflow-x:auto">
+    <table class="compact">
+      <thead>
+        <tr>
+          <th>Goal</th>
+          {% for week in heatmap.weeks %}<th>{{ week|date:"M j" }}</th>{% endfor %}
+        </tr>
+      </thead>
+      <tbody>
+        {% for goal_id, title in heatmap.goals.items %}
+        <tr>
+          <td>{{ title }}</td>
+          {% for week in heatmap.weeks %}
+            <td>{{ heatmap.matrix|get_item:goal_id|get_item:week|default:0 }}</td>
+          {% endfor %}
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    </div>
+  {% else %}
+    <p class="empty-state">No goal-linked sessions yet.</p>
+  {% endif %}
+</section>
+
+<section class="panel">
+  <h2>Mindset language trend</h2>
+  {% if mindset_ratio %}
+    <canvas id="mindset-chart" height="220"></canvas>
+    {{ mindset_ratio|json_script:"mindset-data" }}
+    <script>
+      (function () {
+        const rows = JSON.parse(document.getElementById("mindset-data").textContent).filter(r => r.growth_ratio !== null);
+        new Chart(document.getElementById("mindset-chart"), {
+          type: "line",
+          data: {
+            labels: rows.map(r => r.month),
+            datasets: [{label: "Growth ratio", data: rows.map(r => r.growth_ratio), borderColor: "#2a9d8f"}],
+          },
+          options: {scales: {y: {min: 0, max: 1}}},
+        });
+      })();
+    </script>
+    <p><small>Crude wordlist heuristic — a rough trend indicator, not a rigorous measure.</small></p>
+  {% else %}
+    <p class="empty-state">No journal or setback entries yet.</p>
+  {% endif %}
+</section>
+
+<section class="panel">
+  <h2>Deliberate practice quality</h2>
+  {% if dp_quality.count %}
+    <p>
+      {{ dp_quality.count }} DP session{{ dp_quality.count|pluralize }} —
+      {{ dp_quality.pct_complete|floatformat:0 }}% logged a stretch goal, feedback, and refinement.
+      Mean discomfort: {{ dp_quality.mean_discomfort|floatformat:1 }}/10.
+    </p>
+    {% if dp_quality.mean_discomfort < 4 %}
+      <p><small>Discomfort is trending low — per Ericsson, that can mean comfortable repetition rather than
+      deliberate practice. Consider raising the stretch goal.</small></p>
+    {% endif %}
+  {% else %}
+    <p class="empty-state">No deliberate practice sessions logged yet.</p>
+  {% endif %}
+</section>
+
+<section class="panel">
+  <h2>Assessment history</h2>
+  <div class="grid">
+    <div>
+      <h3>Grit</h3>
+      {% if grit_history %}
+        <table class="compact">
+          <thead><tr><th>Date</th><th>Total</th><th>Passion</th><th>Perseverance</th></tr></thead>
+          <tbody>
+            {% for a in grit_history %}
+            <tr>
+              <td>{{ a.taken_at|date:"M j, Y" }}</td>
+              <td>{{ a.total_score|floatformat:2 }}</td>
+              <td>{{ a.subscale.passion|default:"—" }}</td>
+              <td>{{ a.subscale.perseverance|default:"—" }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      {% else %}
+        <p class="empty-state">No Grit Scale results yet — take one via /grit.</p>
+      {% endif %}
+    </div>
+    <div>
+      <h3>Mindset</h3>
+      {% if mindset_history %}
+        <table class="compact">
+          <thead><tr><th>Date</th><th>Score</th></tr></thead>
+          <tbody>
+            {% for a in mindset_history %}
+            <tr><td>{{ a.taken_at|date:"M j, Y" }}</td><td>{{ a.total_score|floatformat:0 }}</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      {% else %}
+        <p class="empty-state">No mindset assessment results yet — take one via /mindset.</p>
+      {% endif %}
+    </div>
+  </div>
+</section>
+{% endblock %}

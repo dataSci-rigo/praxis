@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — Praxis{% endblock %}
+
+{% block content %}
+<h1>Dashboard</h1>
+
+<div class="grid">
+  <article>
+    <hgroup>
+      <h3>{{ this_week.dp_minutes }} min</h3>
+      <p>Deliberate practice this week (was {{ last_week.dp_minutes }} min last week)</p>
+    </hgroup>
+  </article>
+  <article>
+    <hgroup>
+      <h3>{{ this_week.flow_episodes }}</h3>
+      <p>Flow episodes this week (was {{ last_week.flow_episodes }} last week)</p>
+    </hgroup>
+  </article>
+  <article>
+    <hgroup>
+      <h3>{{ streaks.current_streak }} day{{ streaks.current_streak|pluralize }}</h3>
+      <p>Current streak (longest: {{ streaks.longest_streak }})</p>
+    </hgroup>
+  </article>
+</div>
+
+<div class="grid">
+  <section class="panel">
+    <h2>Latest reframe</h2>
+    {% if latest_setback %}
+      <blockquote>
+        <p><strong>What happened:</strong> {{ latest_setback.body }}</p>
+        <p><strong>Reframe:</strong> {{ latest_setback.reframe }}</p>
+        <footer>{{ latest_setback.created_at|date:"M j, Y" }}</footer>
+      </blockquote>
+    {% else %}
+      <p class="empty-state">No setbacks logged yet — they'll show up here once you use /setback.</p>
+    {% endif %}
+  </section>
+
+  <section class="panel">
+    <h2>Flow map (last 14 days)</h2>
+    {% if flow_map.points %}
+      <canvas id="flow-map-thumb" height="220"></canvas>
+      {{ flow_map.points|json_script:"flow-map-thumb-data" }}
+      <script>
+        (function () {
+          const points = JSON.parse(document.getElementById("flow-map-thumb-data").textContent);
+          const colors = {flow: "#2a9d8f", anxiety: "#e76f51", boredom: "#e9c46a", apathy: "#8d99ae"};
+          new Chart(document.getElementById("flow-map-thumb"), {
+            type: "scatter",
+            data: {
+              datasets: [{
+                data: points.map(p => ({x: p.challenge, y: p.skill, activity: p.activity})),
+                backgroundColor: points.map(p => colors[p.quadrant]),
+              }],
+            },
+            options: {
+              scales: {
+                x: {title: {display: true, text: "Challenge"}, min: 0, max: 10},
+                y: {title: {display: true, text: "Skill"}, min: 0, max: 10},
+              },
+              plugins: {legend: {display: false}},
+            },
+          });
+        })();
+      </script>
+    {% else %}
+      <p class="empty-state">Need a few more days of ESM pings or flow sessions before a flow map appears.</p>
+    {% endif %}
+  </section>
+</div>
+
+<p><a href="{% url 'insights' %}" role="button" class="secondary">Full analytics →</a></p>
+{% endblock %}

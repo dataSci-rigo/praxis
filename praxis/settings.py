@@ -93,4 +93,8 @@ USE_TZ = True
 
 STATIC_URL = "static/"
 
+# Single-user site: reuse the admin login form instead of building a second one.
+LOGIN_URL = "/admin/login/"
+LOGIN_REDIRECT_URL = "/"
+
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
