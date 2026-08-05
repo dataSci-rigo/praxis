@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block title %}Delete card — Praxis{% endblock %}
+
+{% block content %}
+<h1>Delete card?</h1>
+<p>[{{ object.book }}] {{ object.title }}</p>
+<form method="post">
+  {% csrf_token %}
+  <button type="submit" class="contrast">Delete</button>
+  <a href="{% url 'bookcard-list' %}" role="button" class="secondary">Cancel</a>
+</form>
+{% endblock %}

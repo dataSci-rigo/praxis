@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}Library — Praxis{% endblock %}
+
+{% block content %}
+<h1>Library</h1>
+<p><a href="{% url 'bookcard-add' %}" role="button">+ Add card</a></p>
+
+{% if cards %}
+<div class="grid">
+  {% for c in cards %}
+  <article>
+    <header>[{{ c.book }}] {{ c.title }}</header>
+    <p>{{ c.body }}</p>
+    <footer>
+      shown {{ c.times_shown }}x
+      · <a href="{% url 'bookcard-edit' c.pk %}">edit</a>
+      · <a href="{% url 'bookcard-delete' c.pk %}">delete</a>
+    </footer>
+  </article>
+  {% endfor %}
+</div>
+{% else %}
+<p class="empty-state">No book cards yet.</p>
+{% endif %}
+{% endblock %}

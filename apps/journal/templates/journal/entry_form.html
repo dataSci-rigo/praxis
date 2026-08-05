@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block title %}Edit entry — Praxis{% endblock %}
+
+{% block content %}
+<h1>Edit entry</h1>
+<form method="post">
+  {% csrf_token %}
+  {{ form.as_p }}
+  <button type="submit">Save</button>
+  <a href="{% url 'journal-list' %}" role="button" class="secondary">Cancel</a>
+</form>
+{% endblock %}

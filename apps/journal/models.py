@@ -29,6 +29,11 @@ class Entry(models.Model):
     def __str__(self) -> str:
         return f"{self.kind} ({self.created_at:%Y-%m-%d})"
 
+    @property
+    def growth_ratio(self) -> float | None:
+        total = self.fixed_score + self.growth_score
+        return (self.growth_score / total) if total else None
+
     def clean(self) -> None:
         if self.kind == self.SETBACK and not self.reframe:
             raise ValidationError("A setback entry requires a growth reframe.")

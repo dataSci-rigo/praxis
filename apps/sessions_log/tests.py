@@ -1,5 +1,7 @@
+from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.test import TestCase
+from django.urls import reverse
 from django.utils import timezone
 
 from apps.goals.models import Goal
@@ -78,3 +80,70 @@ class SessionKindExclusivityTests(TestCase):
         )
         with self.assertRaises(ValidationError):
             session.full_clean()
+
+
+class SessionListViewTests(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(username="owner", password="pw")
+        top = Goal.objects.create(title="Piano mastery", level=Goal.TOP, domain="piano")
+        self.mid = Goal.objects.create(
+            title="Technique", level=Goal.MID, domain="piano", parent=top
+        )
+        self.other_mid = Goal.objects.create(
+            title="Repertoire", level=Goal.MID, domain="piano", parent=top
+        )
+        Session.objects.create(
+            kind=Session.LEARNING,
+            goal=self.mid,
+            started_at=timezone.now(),
+            duration_min=15,
+            notes="x",
+        )
+        Session.objects.create(
+            kind=Session.DELIBERATE_PRACTICE,
+            goal=self.other_mid,
+            started_at=timezone.now(),
+            duration_min=30,
+            stretch_goal="x",
+            feedback_received="y",
+            refinement="z",
+            discomfort=5,
+        )
+
+    def test_list_requires_login(self):
+        self.assertEqual(self.client.get(reverse("session-list")).status_code, 302)
+
+    def test_list_shows_all_by_default(self):
+        self.client.force_login(self.user)
+        response = self.client.get(reverse("session-list"))
+        self.assertEqual(len(response.context["sessions"]), 2)
+
+    def test_filter_by_kind(self):
+        self.client.force_login(self.user)
+        response = self.client.get(reverse("session-list"), {"kind": Session.LEARNING})
+        self.assertEqual(len(response.context["sessions"]), 1)
+        self.assertEqual(response.context["sessions"][0].kind, Session.LEARNING)
+
+    def test_filter_by_goal(self):
+        self.client.force_login(self.user)
+        response = self.client.get(reverse("session-list"), {"goal": self.mid.id})
+        self.assertEqual(len(response.context["sessions"]), 1)
+        self.assertEqual(response.context["sessions"][0].goal_id, self.mid.id)
+
+    def test_edit_persists(self):
+        self.client.force_login(self.user)
+        session = Session.objects.get(kind=Session.LEARNING)
+        response = self.client.post(
+            reverse("session-edit", args=[session.pk]),
+            {
+                "kind": Session.LEARNING,
+                "goal": self.mid.id,
+                "started_at": "2026-01-01T10:00",
+                "duration_min": 45,
+                "notes": "updated notes",
+            },
+        )
+        self.assertEqual(response.status_code, 302)
+        session.refresh_from_db()
+        self.assertEqual(session.duration_min, 45)
+        self.assertEqual(session.notes, "updated notes")

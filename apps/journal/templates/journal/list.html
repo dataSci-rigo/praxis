@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}Journal — Praxis{% endblock %}
+
+{% block content %}
+<h1>Journal</h1>
+
+{% if entries %}
+{% for e in entries %}
+<article>
+  <header>
+    {{ e.created_at|date:"M j, Y H:i" }} — {{ e.get_kind_display }}
+    {% if e.goal %}· {{ e.goal.title }}{% endif %}
+    {% if e.growth_ratio is not None %}
+      <span title="growth score ÷ (growth + fixed)">
+        {% if e.growth_ratio >= 0.5 %}
+          <span class="quadrant-flow">growth {% widthratio e.growth_ratio 1 100 %}%</span>
+        {% else %}
+          <span class="quadrant-anxiety">growth {% widthratio e.growth_ratio 1 100 %}%</span>
+        {% endif %}
+      </span>
+    {% endif %}
+    <a href="{% url 'journal-edit' e.pk %}">edit</a>
+  </header>
+  {% if e.kind == "SETBACK" %}
+    <p><strong>What happened:</strong> {{ e.body }}</p>
+    <p><strong>Reframe:</strong> {{ e.reframe }}</p>
+  {% else %}
+    <p>{{ e.body }}</p>
+  {% endif %}
+</article>
+{% endfor %}
+
+{% if is_paginated %}
+<nav>
+  <ul>
+    {% if page_obj.has_previous %}<li><a href="?page={{ page_obj.previous_page_number }}">← Newer</a></li>{% endif %}
+    <li>Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</li>
+    {% if page_obj.has_next %}<li><a href="?page={{ page_obj.next_page_number }}">Older →</a></li>{% endif %}
+  </ul>
+</nav>
+{% endif %}
+{% else %}
+<p class="empty-state">No journal entries yet — use /journal or /setback on the bot.</p>
+{% endif %}
+{% endblock %}

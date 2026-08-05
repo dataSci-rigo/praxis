@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}Goals — Praxis{% endblock %}
+
+{% block content %}
+<h1>Goals</h1>
+<p><a href="{% url 'goal-add' %}" role="button">+ Add goal</a></p>
+
+{% if orphans %}
+<article style="border-color:#e76f51">
+  <h3>⚠ Orphaned effort</h3>
+  <p>Sessions logged against a goal that's since been dropped or achieved:</p>
+  <ul>
+    {% for s in orphans %}
+    <li>{{ s.duration_min }} min — {{ s.kind }} on <em>{{ s.goal.title }}</em> ({{ s.goal.status }}), {{ s.started_at|date:"M j, Y" }}</li>
+    {% endfor %}
+  </ul>
+</article>
+{% endif %}
+
+{% for entry in domains %}
+<section class="panel">
+  <h2>{{ entry.domain }}</h2>
+  {% for top in entry.tops %}
+    <details open>
+      <summary>
+        <strong>{{ top.goal.title }}</strong>
+        {% if top.goal.status != "ACTIVE" %}<span> [{{ top.goal.status }}]</span>{% endif %}
+        — {{ top.effort_minutes }} min total
+        <a href="{% url 'goal-edit' top.goal.pk %}">edit</a>
+      </summary>
+      <ul>
+        {% for mid in top.children %}
+        <li>
+          {{ mid.goal.title }}
+          {% if mid.goal.status != "ACTIVE" %}<span> [{{ mid.goal.status }}]</span>{% endif %}
+          — {{ mid.effort_minutes }} min
+          <a href="{% url 'goal-edit' mid.goal.pk %}">edit</a>
+          <ul>
+            {% for low in mid.children %}
+            <li>
+              {{ low.goal.title }}
+              {% if low.goal.status != "ACTIVE" %}<span> [{{ low.goal.status }}]</span>{% endif %}
+              — {{ low.effort_minutes }} min
+              <a href="{% url 'goal-edit' low.goal.pk %}">edit</a>
+            </li>
+            {% endfor %}
+          </ul>
+        </li>
+        {% endfor %}
+      </ul>
+    </details>
+  {% endfor %}
+</section>
+{% empty %}
+<p class="empty-state">No goals yet — <a href="{% url 'goal-add' %}">add your first one</a>.</p>
+{% endfor %}
+{% endblock %}

@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}Sessions — Praxis{% endblock %}
+
+{% block content %}
+<h1>Sessions</h1>
+
+<form method="get">
+  <div class="grid">
+    <select name="kind">
+      <option value="">All kinds</option>
+      {% for value, label in kind_choices %}
+      <option value="{{ value }}" {% if selected_kind == value %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+    <select name="goal">
+      <option value="">All goals</option>
+      {% for g in goals %}
+      <option value="{{ g.id }}" {% if selected_goal == g.id|stringformat:"s" %}selected{% endif %}>{{ g.title }} ({{ g.domain }})</option>
+      {% endfor %}
+    </select>
+    <input type="date" name="from" value="{{ date_from }}" placeholder="From">
+    <input type="date" name="to" value="{{ date_to }}" placeholder="To">
+    <button type="submit">Filter</button>
+  </div>
+</form>
+
+{% if sessions %}
+<table class="compact">
+  <thead><tr><th>Date</th><th>Kind</th><th>Goal</th><th>Minutes</th><th></th></tr></thead>
+  <tbody>
+    {% for s in sessions %}
+    <tr>
+      <td>{{ s.started_at|date:"M j, Y H:i" }}</td>
+      <td>{{ s.get_kind_display }}</td>
+      <td>{{ s.goal.title }}</td>
+      <td>{{ s.duration_min }}</td>
+      <td><a href="{% url 'session-edit' s.pk %}">edit</a></td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+{% if is_paginated %}
+<nav>
+  <ul>
+    {% if page_obj.has_previous %}<li><a href="?page={{ page_obj.previous_page_number }}">← Newer</a></li>{% endif %}
+    <li>Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</li>
+    {% if page_obj.has_next %}<li><a href="?page={{ page_obj.next_page_number }}">Older →</a></li>{% endif %}
+  </ul>
+</nav>
+{% endif %}
+{% else %}
+<p class="empty-state">No sessions match these filters.</p>
+{% endif %}
+{% endblock %}
