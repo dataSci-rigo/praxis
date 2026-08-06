@@ -1,11 +1,16 @@
+import random
+from datetime import time
 from unittest.mock import AsyncMock, MagicMock
 
 from django.core.exceptions import ValidationError
 from django.test import TestCase
 from django.utils import timezone
 
-from apps.bot import services
+from apps.assessments.models import Assessment, ScaleItem
+from apps.bot import scheduler, services
 from apps.bot.decorators import owner_only
+from apps.bot.esm_scheduling import draw_esm_times
+from apps.esm.models import Ping
 from apps.goals.models import Goal
 from apps.journal.models import Entry
 from apps.sessions_log.models import Session
@@ -157,3 +162,118 @@ class OwnerOnlyDecoratorTests(TestCase):
         result = asyncio.run(guarded(update, context))
         handler.assert_called_once()
         self.assertEqual(result, "handled")
+
+
+class DrawESMTimesTests(TestCase):
+    def test_returns_n_times_within_window(self):
+        times = draw_esm_times("09:00-21:00", 3, min_spacing_min=90, rng=random.Random(1))
+        self.assertEqual(len(times), 3)
+        for t in times:
+            self.assertGreaterEqual(t, time(9, 0))
+            self.assertLessEqual(t, time(21, 0))
+
+    def test_respects_minimum_spacing(self):
+        times = draw_esm_times("09:00-21:00", 3, min_spacing_min=90, rng=random.Random(42))
+        minutes = [t.hour * 60 + t.minute for t in times]
+        for a, b in zip(minutes, minutes[1:]):
+            self.assertGreaterEqual(b - a, 90)
+
+    def test_sorted_ascending(self):
+        times = draw_esm_times("09:00-21:00", 4, min_spacing_min=60, rng=random.Random(7))
+        self.assertEqual(times, sorted(times))
+
+    def test_zero_pings_returns_empty(self):
+        self.assertEqual(draw_esm_times("09:00-21:00", 0), [])
+
+    def test_falls_back_to_even_spacing_when_window_too_narrow(self):
+        # 3 pings needing 90 min spacing each would need a 180 min span; window is only 60 min.
+        times = draw_esm_times("09:00-10:00", 3, min_spacing_min=90, rng=random.Random(3))
+        self.assertEqual(len(times), 3)
+        for t in times:
+            self.assertGreaterEqual(t, time(9, 0))
+            self.assertLessEqual(t, time(10, 0))
+
+    def test_invalid_window_raises(self):
+        with self.assertRaises(ValueError):
+            draw_esm_times("21:00-09:00", 3)
+
+
+class ESMResponseServiceTests(TestCase):
+    def setUp(self):
+        self.ping = Ping.objects.create(
+            scheduled_for=timezone.now(), sent_at=timezone.now(), status=Ping.SENT
+        )
+
+    def test_save_esm_response_marks_ping_answered(self):
+        response = services.save_esm_response(
+            ping_id=self.ping.id,
+            activity="practicing scales",
+            challenge=7,
+            skill=6,
+            absorption=8,
+            mood=7,
+            wish_doing_else=False,
+            autotelic=True,
+        )
+        self.assertEqual(response.ping_id, self.ping.id)
+        self.ping.refresh_from_db()
+        self.assertEqual(self.ping.status, Ping.ANSWERED)
+
+
+class AssessmentServiceTests(TestCase):
+    def test_scale_items_for_ordered_by_number(self):
+        ScaleItem.objects.create(kind=ScaleItem.GRIT, number=2, text="b")
+        ScaleItem.objects.create(kind=ScaleItem.GRIT, number=1, text="a")
+        items = services.scale_items_for(ScaleItem.GRIT)
+        self.assertEqual([i.number for i in items], [1, 2])
+
+    def test_save_assessment_creates_item_responses(self):
+        assessment = services.save_assessment(
+            kind=Assessment.GRIT,
+            total_score=4.2,
+            subscale_json={"passion": 4.0, "perseverance": 4.4},
+            item_values={1: 4, 2: 5},
+        )
+        self.assertEqual(assessment.item_responses.count(), 2)
+        self.assertEqual(assessment.total_score, 4.2)
+
+
+class SchedulerTests(TestCase):
+    def test_create_todays_pings_is_idempotent(self):
+        # An existing Ping for today should stop a second draw from running.
+        Ping.objects.create(scheduled_for=timezone.now(), status=Ping.PENDING)
+        created = scheduler._create_todays_pings()
+        self.assertEqual(created, [])
+        self.assertEqual(Ping.objects.count(), 1)
+
+    def test_create_todays_pings_skips_past_times(self):
+        with self.settings(ESM_WINDOW="00:00-00:01", ESM_PINGS_PER_DAY=1):
+            created = scheduler._create_todays_pings()
+        # 00:00-00:01 is almost certainly in the past by the time this test runs.
+        self.assertEqual(created, [])
+        self.assertEqual(Ping.objects.count(), 0)
+
+    def test_mark_sent_transitions_pending_to_sent(self):
+        ping = Ping.objects.create(scheduled_for=timezone.now(), status=Ping.PENDING)
+        self.assertTrue(scheduler._mark_sent(ping.id))
+        ping.refresh_from_db()
+        self.assertEqual(ping.status, Ping.SENT)
+        self.assertIsNotNone(ping.sent_at)
+
+    def test_mark_sent_is_a_noop_if_already_handled(self):
+        ping = Ping.objects.create(scheduled_for=timezone.now(), status=Ping.ANSWERED)
+        self.assertFalse(scheduler._mark_sent(ping.id))
+        ping.refresh_from_db()
+        self.assertEqual(ping.status, Ping.ANSWERED)
+
+    def test_expire_if_unanswered_expires_sent_and_pending(self):
+        sent = Ping.objects.create(scheduled_for=timezone.now(), status=Ping.SENT)
+        scheduler._expire_if_unanswered(sent.id)
+        sent.refresh_from_db()
+        self.assertEqual(sent.status, Ping.EXPIRED)
+
+    def test_expire_if_unanswered_leaves_answered_pings_alone(self):
+        answered = Ping.objects.create(scheduled_for=timezone.now(), status=Ping.ANSWERED)
+        scheduler._expire_if_unanswered(answered.id)
+        answered.refresh_from_db()
+        self.assertEqual(answered.status, Ping.ANSWERED)

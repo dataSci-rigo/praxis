@@ -5,6 +5,8 @@ from datetime import datetime
 
 from django.utils import timezone
 
+from apps.assessments.models import Assessment, ItemResponse, ScaleItem
+from apps.esm.models import Ping, PingResponse
 from apps.goals.models import Goal
 from apps.journal.models import Entry
 from apps.sessions_log.models import Session
@@ -118,6 +120,53 @@ def goal_tree_text() -> str:
                 low_tag = "" if low.status == Goal.ACTIVE else f" [{low.status}]"
                 lines.append(f"  │   ├─ {low.title}{low_tag}")
     return "\n".join(lines)
+
+
+def save_esm_response(
+    *,
+    ping_id: int,
+    activity: str,
+    challenge: int,
+    skill: int,
+    absorption: int,
+    mood: int,
+    wish_doing_else: bool,
+    autotelic: bool,
+) -> PingResponse:
+    ping = Ping.objects.get(pk=ping_id)
+    response = PingResponse(
+        ping=ping,
+        activity=activity,
+        challenge=challenge,
+        skill=skill,
+        absorption=absorption,
+        mood=mood,
+        wish_doing_else=wish_doing_else,
+        autotelic=autotelic,
+    )
+    response.full_clean()
+    response.save()
+    ping.status = Ping.ANSWERED
+    ping.save(update_fields=["status", "updated_at"])
+    return response
+
+
+def scale_items_for(kind: str) -> list[ScaleItem]:
+    return list(ScaleItem.objects.filter(kind=kind).order_by("number"))
+
+
+def save_assessment(
+    *, kind: str, total_score: float, subscale_json: dict, item_values: dict[int, int]
+) -> Assessment:
+    assessment = Assessment(
+        kind=kind, taken_at=timezone.now(), total_score=total_score, subscale_json=subscale_json
+    )
+    assessment.full_clean()
+    assessment.save()
+    ItemResponse.objects.bulk_create(
+        ItemResponse(assessment=assessment, item_number=n, value=v) for n, v in item_values.items()
+    )
+    return assessment
 
 
 def this_week_stats() -> dict:

@@ -13,6 +13,8 @@ COMMANDS_TEXT = (
     "/setback — log a setback + growth reframe\n"
     "/journal — free-text journal entry\n"
     "/goal — list the goal tree / add a LOW goal\n"
+    "/grit — take the Grit Scale\n"
+    "/mindset — take the Mindset Assessment\n"
     "/card — a random book card\n"
     "/stats — this week's numbers\n"
     "/cancel — cancel whatever you're doing\n"

@@ -1,8 +1,12 @@
+from datetime import time as dtime
+from zoneinfo import ZoneInfo
+
 from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
 from telegram.ext import Application
 
 from apps.bot.handlers import all_handlers
+from apps.bot.scheduler import monthly_assessment_reminder, schedule_todays_pings
 
 
 class Command(BaseCommand):
@@ -16,6 +20,19 @@ class Command(BaseCommand):
 
         application = Application.builder().token(settings.TELEGRAM_BOT_TOKEN).build()
         application.add_handlers(all_handlers)
+
+        tz = ZoneInfo(settings.TIME_ZONE)
+        job_queue = application.job_queue
+        job_queue.run_once(schedule_todays_pings, when=1, name="schedule_esm_startup")
+        job_queue.run_daily(
+            schedule_todays_pings, time=dtime(0, 5, tzinfo=tz), name="schedule_esm_daily"
+        )
+        job_queue.run_monthly(
+            monthly_assessment_reminder,
+            when=dtime(10, 0, tzinfo=tz),
+            day=1,
+            name="monthly_assessment_reminder",
+        )
 
         self.stdout.write(self.style.SUCCESS("Praxis bot starting (long polling)..."))
         application.run_polling()
