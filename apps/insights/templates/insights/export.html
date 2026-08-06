@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block title %}Export — Praxis{% endblock %}
+
+{% block content %}
+<h1>Export</h1>
+<p>One CSV per model, opens fine in any spreadsheet.</p>
+<ul>
+  {% for name in models %}
+  <li><a href="{% url 'export-csv' name %}">{{ name }}.csv</a></li>
+  {% endfor %}
+</ul>
+{% endblock %}

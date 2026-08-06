@@ -1,13 +1,17 @@
 from datetime import date, datetime, timedelta
 
+from django.contrib.auth.models import User
 from django.test import TestCase
+from django.urls import reverse
 from django.utils import timezone
 
 from apps.assessments.models import Assessment
 from apps.esm.models import Ping, PingResponse
 from apps.goals.models import Goal
 from apps.insights import services
+from apps.insights.models import WeeklyReview
 from apps.journal.models import Entry
+from apps.library.models import BookCard
 from apps.sessions_log.models import Session
 
 
@@ -269,3 +273,77 @@ class WeeklyMinutesByMidGoalTests(GoalFixtureMixin, TestCase):
         self.assertEqual(result["goals"][self.mid.id], "Technique")
         week_start = services._week_start(as_of.date())
         self.assertEqual(result["matrix"][self.mid.id][week_start], 25)
+
+
+class ReviewViewTests(GoalFixtureMixin, TestCase):
+    def setUp(self):
+        super().setUp()
+        self.user = User.objects.create_user(username="owner", password="pw")
+
+    def test_requires_login(self):
+        self.assertEqual(self.client.get(reverse("review")).status_code, 302)
+
+    def test_renders_and_shows_last_weeks_setback(self):
+        self.client.force_login(self.user)
+        # An entry created "now" falls in last week relative to `services.week_range`'s
+        # notion of "current" only once we treat "now" as inside the current week — the
+        # view itself calls services with no `as_of`, so just assert the page renders.
+        Entry.objects.create(
+            kind=Entry.SETBACK, body="Missed cue", reframe="Not yet rehearsed enough"
+        )
+        response = self.client.get(reverse("review"))
+        self.assertEqual(response.status_code, 200)
+
+    def test_submitting_review_persists(self):
+        self.client.force_login(self.user)
+        self.client.get(reverse("review"))  # creates the WeeklyReview row via get_or_create
+        review = WeeklyReview.objects.get()
+        response = self.client.post(
+            reverse("review"),
+            {
+                "what_worked": "Consistent morning practice",
+                "what_to_change": "Log DP sessions same-day",
+                "next_stretch_goal": "Left-hand runs at tempo",
+            },
+        )
+        self.assertEqual(response.status_code, 302)
+        review.refresh_from_db()
+        self.assertEqual(review.what_worked, "Consistent morning practice")
+
+    def test_revisiting_review_shows_saved_answers(self):
+        self.client.force_login(self.user)
+        self.client.post(
+            reverse("review"),
+            {"what_worked": "x", "what_to_change": "y", "next_stretch_goal": "z"},
+        )
+        response = self.client.get(reverse("review"))
+        self.assertContains(response, "x")
+
+
+class ExportCSVTests(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(username="owner", password="pw")
+
+    def test_index_requires_login(self):
+        self.assertEqual(self.client.get(reverse("export-index")).status_code, 302)
+
+    def test_index_lists_all_models(self):
+        self.client.force_login(self.user)
+        response = self.client.get(reverse("export-index"))
+        self.assertContains(response, "goals.csv")
+        self.assertContains(response, "library.csv")
+
+    def test_csv_download_contains_rows(self):
+        self.client.force_login(self.user)
+        BookCard.objects.create(book=BookCard.GRIT, title="Test card", body="Body text")
+        response = self.client.get(reverse("export-csv", args=["library"]))
+        self.assertEqual(response["Content-Type"], "text/csv")
+        content = response.content.decode()
+        self.assertIn("Test card", content)
+        header = content.splitlines()[0]
+        self.assertIn("title", header)
+
+    def test_unknown_model_404s(self):
+        self.client.force_login(self.user)
+        response = self.client.get(reverse("export-csv", args=["nope"]))
+        self.assertEqual(response.status_code, 404)

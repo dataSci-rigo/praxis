@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}Weekly review — Praxis{% endblock %}
+
+{% block content %}
+<h1>Weekly review</h1>
+<p>{{ week_start|date:"M j" }} – {{ week_end|date:"M j, Y" }}</p>
+
+<section class="panel">
+  <h2>Last week's numbers</h2>
+  <p>
+    DP minutes: <strong>{{ last_week.dp_minutes }}</strong>
+    &nbsp;·&nbsp; Flow episodes: <strong>{{ last_week.flow_episodes }}</strong>
+    {% if last_week.flow_rate is not None %}
+      &nbsp;·&nbsp; Flow rate: <strong>{{ last_week.flow_rate|floatformat:2 }}</strong>
+      {% if flow_delta is not None %}
+        ({% if flow_delta >= 0 %}+{% endif %}{{ flow_delta|floatformat:2 }} vs. the week before)
+      {% endif %}
+    {% endif %}
+  </p>
+</section>
+
+<section class="panel">
+  <h2>Setback reframes to re-read</h2>
+  {% if setbacks %}
+    {% for s in setbacks %}
+    <blockquote>
+      <p><strong>What happened:</strong> {{ s.body }}</p>
+      <p><strong>Reframe:</strong> {{ s.reframe }}</p>
+    </blockquote>
+    {% endfor %}
+  {% else %}
+    <p class="empty-state">No setbacks logged last week.</p>
+  {% endif %}
+</section>
+
+<section class="panel">
+  <h2>Orphaned effort</h2>
+  {% if orphans %}
+    <ul>
+      {% for s in orphans %}
+      <li>{{ s.duration_min }} min — {{ s.kind }} on <em>{{ s.goal.title }}</em> ({{ s.goal.status }})</li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p class="empty-state">No orphaned effort — every session links to an active goal.</p>
+  {% endif %}
+</section>
+
+<section class="panel">
+  <h2>Reflection</h2>
+  <form method="post">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit">Save review</button>
+  </form>
+</section>
+{% endblock %}
