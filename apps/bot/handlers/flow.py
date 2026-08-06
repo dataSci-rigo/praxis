@@ -66,8 +66,7 @@ async def flow_challenge(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     query = update.callback_query
     await query.answer()
     context.user_data["flow_challenge"] = int(query.data.split(":")[1])
-    await query.edit_message_text("Skill level (1–10)?")
-    await query.message.reply_text("Skill:", reply_markup=rating_keyboard("sk"))
+    await query.edit_message_text("Skill level (1–10)?", reply_markup=rating_keyboard("sk"))
     return SKILL
 
 
@@ -76,8 +75,9 @@ async def flow_skill(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     query = update.callback_query
     await query.answer()
     context.user_data["flow_skill"] = int(query.data.split(":")[1])
-    await query.edit_message_text("Absorption — how lost in it were you (1–10)?")
-    await query.message.reply_text("Absorption:", reply_markup=rating_keyboard("ab"))
+    await query.edit_message_text(
+        "Absorption — how lost in it were you (1–10)?", reply_markup=rating_keyboard("ab")
+    )
     return ABSORPTION
 
 
@@ -86,8 +86,7 @@ async def flow_absorption(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
     query = update.callback_query
     await query.answer()
     context.user_data["flow_absorption"] = int(query.data.split(":")[1])
-    await query.edit_message_text("Enjoyment (1–10)?")
-    await query.message.reply_text("Enjoyment:", reply_markup=rating_keyboard("en"))
+    await query.edit_message_text("Enjoyment (1–10)?", reply_markup=rating_keyboard("en"))
     return ENJOYMENT
 
 
@@ -96,8 +95,9 @@ async def flow_enjoyment(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     query = update.callback_query
     await query.answer()
     context.user_data["flow_enjoyment"] = int(query.data.split(":")[1])
-    await query.edit_message_text("Did you have a clear goal?")
-    await query.message.reply_text("Clear goal?", reply_markup=yes_no_keyboard("clear"))
+    await query.edit_message_text(
+        "Did you have a clear goal?", reply_markup=yes_no_keyboard("clear")
+    )
     return CLEAR_GOAL
 
 
@@ -106,8 +106,9 @@ async def flow_clear_goal(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
     query = update.callback_query
     await query.answer()
     context.user_data["flow_had_clear_goal"] = query.data.endswith("yes")
-    await query.edit_message_text("Did you get immediate feedback?")
-    await query.message.reply_text("Immediate feedback?", reply_markup=yes_no_keyboard("feedback"))
+    await query.edit_message_text(
+        "Did you get immediate feedback?", reply_markup=yes_no_keyboard("feedback")
+    )
     return IMMEDIATE_FEEDBACK
 
 

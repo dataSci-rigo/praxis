@@ -12,6 +12,7 @@ from telegram.ext import ContextTypes
 from apps.bot.asyncdb import db
 from apps.bot.esm_scheduling import draw_esm_times
 from apps.esm.models import Ping
+from apps.insights.services import monthly_digest
 
 
 def _create_todays_pings() -> list[tuple[int, datetime]]:
@@ -82,3 +83,30 @@ async def monthly_assessment_reminder(context: ContextTypes.DEFAULT_TYPE) -> Non
         settings.TELEGRAM_OWNER_ID,
         "🗓 It's the 1st — retake your Grit Scale (/grit) and Mindset Assessment (/mindset)?",
     )
+
+
+def format_digest_text(digest: dict) -> str:
+    lines = [f"📊 {digest['month_start']:%B %Y} digest", ""]
+    lines.append(f"Deliberate practice: {digest['dp_minutes']} min")
+    lines.append(f"Flow episodes: {digest['flow_episodes']}")
+
+    if digest["best_activities"]:
+        lines.append("")
+        lines.append("Best flow activities:")
+        for row in digest["best_activities"]:
+            lines.append(f"  {row['activity']} — {row['flow_pct']:.0f}% flow")
+
+    if digest["setbacks"]:
+        lines.append("")
+        lines.append(f"{len(digest['setbacks'])} setback reframe(s) to re-read on the website.")
+
+    if digest["suggested_focus"]:
+        lines.append("")
+        lines.append(f"Suggested focus: {digest['suggested_focus']}")
+
+    return "\n".join(lines)
+
+
+async def monthly_digest_message(context: ContextTypes.DEFAULT_TYPE) -> None:
+    digest = await db(monthly_digest)
+    await context.bot.send_message(settings.TELEGRAM_OWNER_ID, format_digest_text(digest))

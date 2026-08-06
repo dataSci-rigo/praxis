@@ -347,3 +347,69 @@ class ExportCSVTests(TestCase):
         self.client.force_login(self.user)
         response = self.client.get(reverse("export-csv", args=["nope"]))
         self.assertEqual(response.status_code, 404)
+
+
+class MonthlyDigestTests(GoalFixtureMixin, TestCase):
+    def test_covers_the_previous_calendar_month(self):
+        as_of = local(2026, 3, 5, 12, 0)  # digest run on Mar 5 -> covers all of February
+
+        Session.objects.create(
+            kind=Session.DELIBERATE_PRACTICE,
+            goal=self.low,
+            started_at=local(2026, 2, 10, 9, 0),
+            duration_min=30,
+            stretch_goal="x",
+            feedback_received="y",
+            refinement="z",
+            discomfort=5,
+        )
+        # January session should NOT be counted.
+        Session.objects.create(
+            kind=Session.DELIBERATE_PRACTICE,
+            goal=self.low,
+            started_at=local(2026, 1, 15, 9, 0),
+            duration_min=999,
+            stretch_goal="x",
+            feedback_received="y",
+            refinement="z",
+            discomfort=5,
+        )
+
+        digest = services.monthly_digest(as_of=as_of)
+        self.assertEqual(digest["month_start"], date(2026, 2, 1))
+        self.assertEqual(digest["month_end"], date(2026, 2, 28))
+        self.assertEqual(digest["dp_minutes"], 30)
+
+    def test_includes_setbacks_and_suggested_focus(self):
+        as_of = local(2026, 3, 1, 10, 0)
+        setback = Entry.objects.create(kind=Entry.SETBACK, body="Missed cue", reframe="Not yet")
+        Entry.objects.filter(pk=setback.pk).update(created_at=local(2026, 2, 20, 10, 0))
+
+        WeeklyReview.objects.create(
+            week_start=date(2026, 2, 16),
+            next_stretch_goal="Left-hand runs at tempo",
+        )
+
+        digest = services.monthly_digest(as_of=as_of)
+        self.assertEqual(len(digest["setbacks"]), 1)
+        self.assertEqual(digest["suggested_focus"], "Left-hand runs at tempo")
+
+    def test_empty_month_has_no_suggested_focus(self):
+        digest = services.monthly_digest(as_of=local(2026, 3, 1, 10, 0))
+        self.assertEqual(digest["dp_minutes"], 0)
+        self.assertEqual(digest["setbacks"], [])
+        self.assertIsNone(digest["suggested_focus"])
+
+
+class DigestViewTests(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(username="owner", password="pw")
+
+    def test_requires_login(self):
+        self.assertEqual(self.client.get(reverse("digest")).status_code, 302)
+
+    def test_renders_empty_state(self):
+        self.client.force_login(self.user)
+        response = self.client.get(reverse("digest"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "No setbacks logged this month.")

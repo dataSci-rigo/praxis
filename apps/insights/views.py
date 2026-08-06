@@ -89,6 +89,11 @@ def review(request):
     return render(request, "insights/review.html", context)
 
 
+@login_required
+def digest(request):
+    return render(request, "insights/digest.html", {"digest": services.monthly_digest()})
+
+
 _EXPORTABLE = {
     "goals": Goal,
     "sessions": Session,

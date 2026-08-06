@@ -6,7 +6,11 @@ from django.core.management.base import BaseCommand, CommandError
 from telegram.ext import Application
 
 from apps.bot.handlers import all_handlers
-from apps.bot.scheduler import monthly_assessment_reminder, schedule_todays_pings
+from apps.bot.scheduler import (
+    monthly_assessment_reminder,
+    monthly_digest_message,
+    schedule_todays_pings,
+)
 
 
 class Command(BaseCommand):
@@ -32,6 +36,12 @@ class Command(BaseCommand):
             when=dtime(10, 0, tzinfo=tz),
             day=1,
             name="monthly_assessment_reminder",
+        )
+        job_queue.run_monthly(
+            monthly_digest_message,
+            when=dtime(9, 0, tzinfo=tz),
+            day=1,
+            name="monthly_digest_message",
         )
 
         self.stdout.write(self.style.SUCCESS("Praxis bot starting (long polling)..."))

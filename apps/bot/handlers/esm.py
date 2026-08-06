@@ -45,8 +45,7 @@ async def esm_challenge(update: Update, context: ContextTypes.DEFAULT_TYPE) -> i
     query = update.callback_query
     await query.answer()
     context.user_data["esm_challenge"] = int(query.data.split(":")[1])
-    await query.edit_message_text("Skill (1–10)?")
-    await query.message.reply_text("Skill:", reply_markup=rating_keyboard("sk"))
+    await query.edit_message_text("Skill (1–10)?", reply_markup=rating_keyboard("sk"))
     return SKILL
 
 
@@ -55,8 +54,9 @@ async def esm_skill(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     query = update.callback_query
     await query.answer()
     context.user_data["esm_skill"] = int(query.data.split(":")[1])
-    await query.edit_message_text("Absorption — how lost in it are you (1–10)?")
-    await query.message.reply_text("Absorption:", reply_markup=rating_keyboard("ab"))
+    await query.edit_message_text(
+        "Absorption — how lost in it are you (1–10)?", reply_markup=rating_keyboard("ab")
+    )
     return ABSORPTION
 
 
@@ -65,8 +65,7 @@ async def esm_absorption(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     query = update.callback_query
     await query.answer()
     context.user_data["esm_absorption"] = int(query.data.split(":")[1])
-    await query.edit_message_text("Mood (1–10)?")
-    await query.message.reply_text("Mood:", reply_markup=rating_keyboard("mo"))
+    await query.edit_message_text("Mood (1–10)?", reply_markup=rating_keyboard("mo"))
     return MOOD
 
 
@@ -75,8 +74,9 @@ async def esm_mood(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     query = update.callback_query
     await query.answer()
     context.user_data["esm_mood"] = int(query.data.split(":")[1])
-    await query.edit_message_text("Would you rather be doing something else?")
-    await query.message.reply_text("Wish you were elsewhere?", reply_markup=yes_no_keyboard("wish"))
+    await query.edit_message_text(
+        "Would you rather be doing something else?", reply_markup=yes_no_keyboard("wish")
+    )
     return WISH_ELSE
 
 
@@ -85,8 +85,9 @@ async def esm_wish_else(update: Update, context: ContextTypes.DEFAULT_TYPE) -> i
     query = update.callback_query
     await query.answer()
     context.user_data["esm_wish_doing_else"] = query.data.endswith("yes")
-    await query.edit_message_text("Would you do this for its own sake — autotelic?")
-    await query.message.reply_text("Autotelic?", reply_markup=yes_no_keyboard("autotelic"))
+    await query.edit_message_text(
+        "Would you do this for its own sake — autotelic?", reply_markup=yes_no_keyboard("autotelic")
+    )
     return AUTOTELIC
 
 

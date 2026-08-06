@@ -102,6 +102,7 @@ async def _finish(query, context: ContextTypes.DEFAULT_TYPE) -> int:
         subscale_json=subscale,
         item_values=responses,
     )
+    await query.edit_message_reply_markup(reply_markup=None)  # remove the now-stale rating buttons
     await query.message.reply_text(f"✅ Saved.\n\n{summary}")
     context.user_data.clear()
     return ConversationHandler.END

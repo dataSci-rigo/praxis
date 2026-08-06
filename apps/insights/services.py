@@ -10,6 +10,7 @@ from django.utils import timezone
 from apps.assessments.models import Assessment
 from apps.esm.models import PingResponse
 from apps.goals.models import Goal
+from apps.insights.models import WeeklyReview
 from apps.journal.models import Entry
 from apps.sessions_log.models import Session
 
@@ -310,3 +311,46 @@ def assessment_history(kind: str = Assessment.GRIT) -> list[dict]:
         {"taken_at": a.taken_at, "total_score": a.total_score, "subscale": a.subscale_json}
         for a in Assessment.objects.filter(kind=kind).order_by("taken_at")
     ]
+
+
+def monthly_digest(as_of: datetime | None = None) -> dict:
+    """Last calendar month's numbers, best flow activities, setback reframes to
+    re-read, and a suggested focus — rendered on /digest/ and sent by the bot
+    on the 1st. Reuses flow_map_points/flow_activity_ranking scoped to exactly
+    that month by setting window_days to the month's own length."""
+    as_of = as_of or timezone.now()
+    today = _local_date(as_of)
+    first_of_this_month = today.replace(day=1)
+    month_end = first_of_this_month - timedelta(days=1)
+    month_start = month_end.replace(day=1)
+
+    start_dt = timezone.make_aware(datetime.combine(month_start, datetime.min.time()))
+    end_dt = timezone.make_aware(datetime.combine(month_end, datetime.max.time()))
+    num_days = (month_end - month_start).days + 1
+
+    sessions = Session.objects.filter(started_at__gte=start_dt, started_at__lte=end_dt)
+    dp_minutes = sum(s.duration_min for s in sessions.filter(kind=Session.DELIBERATE_PRACTICE))
+    flow_episodes = sessions.filter(kind=Session.FLOW_PERFORMANCE).count()
+
+    best_activities = flow_activity_ranking(as_of=end_dt, window_days=num_days, min_points=3)[:3]
+
+    setbacks = list(
+        Entry.objects.filter(kind=Entry.SETBACK, created_at__gte=start_dt, created_at__lte=end_dt)
+    )
+
+    latest_review = (
+        WeeklyReview.objects.filter(week_start__gte=month_start, week_start__lte=month_end)
+        .order_by("-week_start")
+        .first()
+    )
+    suggested_focus = latest_review.next_stretch_goal if latest_review else None
+
+    return {
+        "month_start": month_start,
+        "month_end": month_end,
+        "dp_minutes": dp_minutes,
+        "flow_episodes": flow_episodes,
+        "best_activities": best_activities,
+        "setbacks": setbacks,
+        "suggested_focus": suggested_focus,
+    }

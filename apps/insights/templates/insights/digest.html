@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block title %}Monthly digest — Praxis{% endblock %}
+
+{% block content %}
+<h1>Monthly digest</h1>
+<p>{{ digest.month_start|date:"F Y" }}</p>
+
+<section class="panel">
+  <h2>Numbers</h2>
+  <p>
+    Deliberate practice: <strong>{{ digest.dp_minutes }} min</strong>
+    &nbsp;·&nbsp; Flow episodes: <strong>{{ digest.flow_episodes }}</strong>
+  </p>
+</section>
+
+<section class="panel">
+  <h2>Best flow activities</h2>
+  {% if digest.best_activities %}
+    <table class="compact">
+      <thead><tr><th>Activity</th><th>Points</th><th>% in Flow</th></tr></thead>
+      <tbody>
+        {% for row in digest.best_activities %}
+        <tr>
+          <td>{{ row.activity }}</td>
+          <td>{{ row.n }}</td>
+          <td>{{ row.flow_pct|floatformat:0 }}%</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <p class="empty-state">Not enough points on any single activity this month.</p>
+  {% endif %}
+</section>
+
+<section class="panel">
+  <h2>Setback reframes to re-read</h2>
+  {% if digest.setbacks %}
+    {% for s in digest.setbacks %}
+    <blockquote>
+      <p><strong>What happened:</strong> {{ s.body }}</p>
+      <p><strong>Reframe:</strong> {{ s.reframe }}</p>
+    </blockquote>
+    {% endfor %}
+  {% else %}
+    <p class="empty-state">No setbacks logged this month.</p>
+  {% endif %}
+</section>
+
+<section class="panel">
+  <h2>Suggested focus</h2>
+  {% if digest.suggested_focus %}
+    <p>{{ digest.suggested_focus }}</p>
+    <p><small>From your most recent weekly review that month.</small></p>
+  {% else %}
+    <p class="empty-state">No weekly review answered that month — nothing to carry forward.</p>
+  {% endif %}
+</section>
+{% endblock %}

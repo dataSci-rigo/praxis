@@ -95,7 +95,7 @@
               y: {type: "linear", position: "left", title: {display: true, text: "DP minutes"}},
               y1: {
                 type: "linear", position: "right", min: 0, max: 1,
-                title: {display: true, text: "Flow rate"},
+                title: {display: true, text: "Flow rate (0–1)"},
                 grid: {drawOnChartArea: false},
               },
             },
@@ -124,6 +124,7 @@
 
   <h3>Weekly minutes by goal</h3>
   {% if heatmap.goals %}
+    <p><small>Minutes practiced per week, LOW-goal sessions rolled up to their parent MID goal.</small></p>
     <div style="overflow-x:auto">
     <table class="compact">
       <thead>
@@ -163,7 +164,7 @@
             labels: rows.map(r => r.month),
             datasets: [{label: "Growth ratio", data: rows.map(r => r.growth_ratio), borderColor: "#2a9d8f"}],
           },
-          options: {scales: {y: {min: 0, max: 1}}},
+          options: {scales: {y: {min: 0, max: 1, title: {display: true, text: "Growth ratio (0–1)"}}}},
         });
       })();
     </script>
@@ -197,7 +198,7 @@
       <h3>Grit</h3>
       {% if grit_history %}
         <table class="compact">
-          <thead><tr><th>Date</th><th>Total</th><th>Passion</th><th>Perseverance</th></tr></thead>
+          <thead><tr><th>Date</th><th>Total (max 5)</th><th>Passion</th><th>Perseverance</th></tr></thead>
           <tbody>
             {% for a in grit_history %}
             <tr>
@@ -217,7 +218,7 @@
       <h3>Mindset</h3>
       {% if mindset_history %}
         <table class="compact">
-          <thead><tr><th>Date</th><th>Score</th></tr></thead>
+          <thead><tr><th>Date</th><th>Score (max 100)</th></tr></thead>
           <tbody>
             {% for a in mindset_history %}
             <tr><td>{{ a.taken_at|date:"M j, Y" }}</td><td>{{ a.total_score|floatformat:0 }}</td></tr>

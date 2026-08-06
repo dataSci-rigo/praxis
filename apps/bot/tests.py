@@ -277,3 +277,37 @@ class SchedulerTests(TestCase):
         scheduler._expire_if_unanswered(answered.id)
         answered.refresh_from_db()
         self.assertEqual(answered.status, Ping.ANSWERED)
+
+
+class DigestTextTests(TestCase):
+    def test_formats_all_sections(self):
+        from datetime import date
+
+        digest = {
+            "month_start": date(2026, 2, 1),
+            "dp_minutes": 120,
+            "flow_episodes": 3,
+            "best_activities": [{"activity": "guitar", "n": 5, "flow_pct": 80.0}],
+            "setbacks": [object()],
+            "suggested_focus": "Left-hand runs at tempo",
+        }
+        text = scheduler.format_digest_text(digest)
+        self.assertIn("February 2026", text)
+        self.assertIn("120 min", text)
+        self.assertIn("guitar", text)
+        self.assertIn("1 setback reframe(s)", text)
+        self.assertIn("Left-hand runs at tempo", text)
+
+    def test_formats_empty_month_without_crashing(self):
+        from datetime import date
+
+        digest = {
+            "month_start": date(2026, 2, 1),
+            "dp_minutes": 0,
+            "flow_episodes": 0,
+            "best_activities": [],
+            "setbacks": [],
+            "suggested_focus": None,
+        }
+        text = scheduler.format_digest_text(digest)
+        self.assertIn("0 min", text)
